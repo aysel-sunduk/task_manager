@@ -1,6 +1,7 @@
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
@@ -36,6 +37,14 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <SettingsDrawerWrapper />
+        </ProtectedRoute>
+      } 
+    />
+    <Route 
+      path="/admin" 
+      element={
+        <ProtectedRoute>
+          <Admin />
         </ProtectedRoute>
       } 
     />

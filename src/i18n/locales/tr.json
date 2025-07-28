@@ -27,5 +27,9 @@
   "search": "Ara...",
   "welcome": "Hoş Geldiniz",
   "placeholder": "Bu alan çalışma alanı için ayrılmıştır.",
-  "openSettings": "Sağ üstteki ayarlar ikonuna tıklayarak ayarlar panelini açabilirsiniz."
+  "openSettings": "Sağ üstteki ayarlar ikonuna tıklayarak ayarlar panelini açabilirsiniz.",
+  "logout": "Çıkış Yap",
+  "logoutConfirm": "Çıkış yapmak istediğinize emin misiniz?",
+  "logoutSuccess": "Başarıyla çıkış yapıldı",
+  "cancel": "Vazgeç"
 } 

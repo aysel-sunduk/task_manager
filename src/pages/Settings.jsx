@@ -1,11 +1,15 @@
 import CloseIcon from '@mui/icons-material/Close';
+import LogoutIcon from '@mui/icons-material/Logout';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ThemeContext } from '../App';
+import { AuthContext } from '../context/AuthContext';
+import { logout } from '../services/auth';
 
 // Desteklenen diller
 const languages = [
@@ -37,8 +41,12 @@ const getInputClass = (baseClass) => {
 const Settings = ({ open, onClose }) => {
   // Tema context
   const { theme, setTheme } = useContext(ThemeContext);
+  // Auth context
+  const { logout: authLogout } = useContext(AuthContext);
   // i18next
   const { t, i18n } = useTranslation();
+  // Navigation
+  const navigate = useNavigate();
   // Şifre
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -81,6 +89,48 @@ const Settings = ({ open, onClose }) => {
   const handleProfileChange = (e) => {
     e.preventDefault();
     toast.success(t('profileUpdated'));
+  };
+
+  // Logout işlemi
+  const handleLogout = () => {
+    const toastId = toast.info(
+      <div style={{ minWidth: 220 }}>
+        <div style={{ marginBottom: 12, textAlign: 'center' }}>{t('logoutConfirm')}</div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+          <button
+            style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: 4, padding: '6px 18px', cursor: 'pointer', fontWeight: 500 }}
+            onClick={async () => {
+              toast.dismiss(toastId);
+              try {
+                await logout();
+                authLogout();
+                toast.success(t('logoutSuccess'));
+                onClose();
+                navigate('/login');
+              } catch (error) {
+                toast.error('Çıkış yapılırken bir hata oluştu');
+              }
+            }}
+          >
+            {t('logout')}
+          </button>
+          <button
+            style={{ background: '#6c757d', color: 'white', border: 'none', borderRadius: 4, padding: '6px 18px', cursor: 'pointer', fontWeight: 500 }}
+            onClick={() => toast.dismiss(toastId)}
+          >
+            {t('cancel')}
+          </button>
+        </div>
+      </div>,
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        position: 'top-right',
+        style: { minWidth: 260, minHeight: 70, display: 'flex', alignItems: 'center' }
+      }
+    );
   };
 
   return (
@@ -211,6 +261,31 @@ const Settings = ({ open, onClose }) => {
             </div>
             <button type="submit" className="primary-button">{t('updateProfile')}</button>
           </form>
+        </section>
+        <section className="settings-section premium-section">
+          <h3 className="section-title">{t('logout')}</h3>
+          <button 
+            onClick={handleLogout} 
+            className="logout-button"
+            style={{
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '100%',
+              justifyContent: 'center'
+            }}
+          >
+            <LogoutIcon />
+            {t('logout')}
+          </button>
         </section>
       </div>
     </Drawer>

@@ -4,13 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthContext } from '../context/AuthContext';
+import { login as loginService } from '../services/auth';
 import './LoginForm.css';
-
-// Mock kullanıcı verileri - Gerçek uygulamada burada olmamalı
-const MOCK_USERS = [
-  { email: 'admin@test.com', password: '123', name: 'Admin User', role: 'admin' },
-  { email: 'user@test.com', password: '123', name: 'Normal User', role: 'user' }
-];
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -55,12 +50,6 @@ const LoginForm = () => {
       */
       
       // Mock veri ile giriş - Gerçek uygulamada API kullanılmalı
-      const userData = {
-        name: 'Google User',
-        email: 'google@example.com',
-        role: 'user'
-      };
-      login(userData, 'mock-google-token-123');
       
       // WorkSpace'e yönlendir
       setTimeout(() => {
@@ -72,61 +61,30 @@ const LoginForm = () => {
     }
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    /* 
-    // Gerçek API endpoint kullanımı:
-    const loginUser = async () => {
-      try {
-        const response = await fetch('https://api.example.com/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password, remember }),
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          login(data.user, data.token);
-          toast.success('Giriş başarılı!');
-          navigate('/workspace');
-        } else {
-          toast.error(data.message || 'Giriş başarısız!');
-        }
-      } catch (error) {
-        console.error('Login error:', error);
-        toast.error('Bağlantı hatası oluştu!');
+    try {
+      const data = await loginService(email, password);
+      if (data && data.token) {
+        // Eğer user bilgisi dönmüyorsa, roleId ile user objesi oluşturabilirsin
+        const user = {
+          email, // formdan gelen email
+          roleId: data.roleId // backend'den gelen roleId
+        };
+        login(user, data.token);
+        toast.success(`Hoş geldiniz!`);
+        setTimeout(() => {
+          if (data.roleId === 1) {
+            navigate('/admin');
+          } else {
+            navigate('/workspace');
+          }
+        }, 1000);
+      } else {
+        toast.error('Giriş başarısız!');
       }
-    };
-    
-    loginUser();
-    */
-    
-    // Mock veri ile giriş kontrolü
-    const user = MOCK_USERS.find(
-      user => user.email === email && user.password === password
-    );
-    
-    if (user) {
-      // AuthContext'in login fonksiyonunu kullanarak giriş yap
-      login(
-        {
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }, 
-        `mock-token-${user.role}-123`
-      );
-      
-      toast.success(`Hoş geldiniz, ${user.name}!`);
-      setTimeout(() => {
-        navigate('/workspace');
-      }, 1000);
-    } else {
-      toast.error('Geçersiz e-posta veya şifre!');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Giriş başarısız!');
     }
   };
 
@@ -202,12 +160,6 @@ const LoginForm = () => {
                 </span>
                 Google
               </button>
-
-              <div className="mt-3 text-center text-light small">
-                <p className="mb-1">Test için giriş bilgileri:</p>
-                <p className="mb-1">Email: admin@test.com / Password: 123</p>
-                <p className="mb-0">Email: user@test.com / Password: 123</p>
-              </div>
             </div>
           </div>
         </div>
