@@ -1,7 +1,37 @@
+// src/services/workspaceService.js
+import axios from 'axios';
 
-import axios from "axios";
+const BASE_URL = 'http://localhost:8080/api/workspaces'; // API temel URL'si, istersen .env'den alabilirsin
 
+/**
+ * Yeni bir çalışma alanı (workspace) oluşturur.
+ * @param {number} memberId - Üyenin ID'si
+ * @param {string} workspaceName - Oluşturulacak çalışma alanının adı
+ * @returns {Promise<Object>} - Sunucudan gelen yanıt verisi
+ */
+export const createWorkspace = async (memberId, workspaceName) => {
+  try {
+    const response = await axios.post(BASE_URL, {
+      memberId,
+      workspaceName,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Çalışma alanı oluşturulurken hata:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Tüm çalışma alanlarını (workspaces) listeler.
+ * @returns {Promise<Array>} - Workspace listesini içeren dizi
+ */
 export const fetchAllWorkspaces = async () => {
-  const response = await axios.get("/api/workspaces");
-  return response.data;
+  try {
+    const response = await axios.get(BASE_URL);
+    return response.data;
+  } catch (error) {
+    console.error('Workspace listesi alınırken hata:', error.response?.data || error.message);
+    throw error;
+  }
 };
