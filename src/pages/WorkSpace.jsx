@@ -621,13 +621,13 @@ export default function WorkSpace () {
                 </div>
                 <div className='modal-footer border-0'>
                   <button
-                    className='btn btn-secondary'
+                    className='primary-button'
                     onClick={() => setShowWorkspaceModal(false)}
                   >
                     İptal
                   </button>
                   <button
-                    className='btn primary-button'
+                    className='primary-button'
                     onClick={handleAddWorkspace}
                   >
                     Oluştur

@@ -281,14 +281,15 @@ body {
 
 /* Temaya uygun buton */
 .themed-btn {
-  width: 100%;
-  padding: 13px 0;
+  width: 60%;
+  height: 30px;
+  padding: 6px 10px;
   background: linear-gradient(90deg, #4f8cff 60%, #6c63ff 100%);
   color: #fff;
   border: none;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 0.7rem;
   letter-spacing: 1px;
   box-shadow: 0 2px 8px 0 rgba(76, 99, 255, 0.10);
   cursor: pointer;
@@ -302,6 +303,7 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 32px 16px;
+  opacity: 1;
 }
 
 .header {
@@ -368,6 +370,22 @@ body {
 .button:hover {
   background: #9a8c98;
 }
+.primary-button {
+  padding: 8px 16px;
+  
+  background: linear-gradient(90deg, #4f8cff 60%, #6c63ff 100%);
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.15);
+  letter-spacing: 1px;
+  gap : 8px;
+}
+
 
 .card {
   background: #fff;
@@ -410,6 +428,7 @@ body {
 
 .modal-content {
   background: white;
+  background-color: #ccc;
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 0 10px rgba(0,0,0,0.5);
@@ -417,7 +436,7 @@ body {
   max-width: 400px;
   width: 90%;
 }
-
+/*
 .modal-content h2 {
   margin-bottom: 1rem;
   color: #d8000c;
@@ -431,7 +450,7 @@ body {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-}
+}*/
 
 /* WorkSpace stilleri - görsel olmadan */
 .workspace-bg {
