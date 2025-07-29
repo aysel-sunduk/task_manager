@@ -12,6 +12,17 @@ export const register = async (userData) => {
   return response.data;
 };
 
+/**
+ * Google ile giriş: Google access token'ı backend'e gönderir, backend doğrulama yapar ve user/token döner.
+ * @param {string} googleAccessToken
+ * @returns {Promise<Object>} - { token, memberId, email, roleId }
+ */
+export const googleLogin = async (googleAccessToken) => {
+  // Google ile giriş için backend'e access token gönder
+  const response = await axios.post(`${API_URL}/api/auth/google`, { token: googleAccessToken });
+  return response.data; // { token, memberId, email, roleId }
+};
+
 // Logout endpoint - şimdilik yorum satırı olarak bırakıldı
 // export const logout = async () => {
 //   try {

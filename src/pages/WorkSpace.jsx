@@ -1,15 +1,8 @@
-'use client'
-
-import { useContext, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Avatar, AvatarFallback } from '../components/ui/Avatar'
-import { AuthContext } from '../context/AuthContext'
-
 import {
   Bell,
   ChevronDown,
   ChevronUp,
-  Grid3X3,  
+  Grid3X3,
   Home,
   Lock,
   Menu,
@@ -17,8 +10,13 @@ import {
   Search,
   Settings,
   Users
-} from 'lucide-react'
-import '../App.css'
+} from 'lucide-react';
+import React, { useContext, useState } from "react";
+import { useNavigate } from 'react-router-dom';
+import '../App.css';
+import { Avatar, AvatarFallback } from '../components/ui/Avatar';
+import { AuthContext } from '../context/AuthContext';
+import { createWorkspace, fetchWorkspaceMembers } from '../services/workspaceService';
 
 export default function WorkSpace () {
   const navigate = useNavigate()
@@ -30,8 +28,6 @@ export default function WorkSpace () {
   const [newBoardName, setNewBoardName] = useState('')
   const [showBoardModal, setShowBoardModal] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState({})
-  const [showMemberForm, setShowMemberForm] = useState(false)
-  const [newMemberName, setNewMemberName] = useState('')
   const [showSidebar, setShowSidebar] = useState(true)
 
   // Davet modal state'leri
@@ -40,6 +36,9 @@ export default function WorkSpace () {
   const [emailError, setEmailError] = useState('')
 
   const [mainView, setMainView] = useState({ type: 'default' })
+  const [workspaceMembers, setWorkspaceMembers] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [membersError, setMembersError] = useState(null);
 
   // Get user initials for avatar
   const getUserInitials = () => {
@@ -56,15 +55,35 @@ export default function WorkSpace () {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   }
 
-  const handleAddWorkspace = () => {
-    if (newWorkspaceName.trim() === '') return
-    const newWs = { name: newWorkspaceName, boards: [], members: [] }
-    setWorkspaces([...workspaces, newWs])
-    setNewWorkspaceName('')
-    setShowWorkspaceModal(false)
-    setSelectedWorkspace(newWs)
-    setMainView({ type: 'workspaceBoards', workspace: newWs })
-  }
+  const handleAddWorkspace = async () => {
+    const memberId = user?.id || user?._id;
+    console.log("Workspace oluşturuluyor, memberId:", memberId, "workspaceName:", newWorkspaceName);
+    if (!memberId) {
+      alert("Kullanıcı ID bulunamadı! Lütfen tekrar giriş yapın.");
+      return;
+    }
+    if (!newWorkspaceName.trim()) {
+      alert("Workspace adı boş olamaz!");
+      return;
+    }
+    if (newWorkspaceName.length > 20) {
+      alert("Workspace adı en fazla 20 karakter olabilir!");
+      return;
+    }
+    try {
+      let created = await createWorkspace(memberId, newWorkspaceName);
+      // Backend'den boards alanı gelmiyorsa ekle
+      if (!created.boards) created.boards = [];
+      setWorkspaces([...workspaces, created]);
+      setNewWorkspaceName('');
+      setShowWorkspaceModal(false);
+      setSelectedWorkspace(created);
+      setMainView({ type: 'workspaceBoards', workspace: created });
+    } catch (err) {
+      alert('Çalışma alanı oluşturulamadı!');
+      console.error(err);
+    }
+  };
 
   const handleAddBoard = () => {
     if (!selectedWorkspace || newBoardName.trim() === '') return
@@ -102,11 +121,30 @@ export default function WorkSpace () {
     setMainView({ type: 'workspaceBoards', workspace: current })
   }
 
-  const handleShowWorkspaceMembers = ws => {
-    const current = workspaces.find(w => w.name === ws.name) || ws
-    setSelectedWorkspace(current)
-    setMainView({ type: 'workspaceMembers', workspace: current })
-  }
+  // Üyeleri Gör'e tıklanınca üyeleri backend'den çek
+  const handleShowWorkspaceMembers = async ws => {
+    setSelectedWorkspace(ws);
+    setMainView({ type: 'workspaceMembers', workspace: ws });
+  };
+
+  // mainView değişince üyeleri çek
+  React.useEffect(() => {
+    const fetchMembers = async () => {
+      if (mainView.type === 'workspaceMembers' && mainView.workspace) {
+        setLoadingMembers(true);
+        setMembersError(null);
+        try {
+          const members = await fetchWorkspaceMembers(mainView.workspace.id || mainView.workspace._id);
+          setWorkspaceMembers(members);
+        } catch (err) {
+          setMembersError('Üyeler alınamadı.');
+        } finally {
+          setLoadingMembers(false);
+        }
+      }
+    };
+    fetchMembers();
+  }, [mainView]);
 
   const getCurrentWorkspace = ws =>
     workspaces.find(w => w.name === ws?.name) || ws
@@ -389,7 +427,7 @@ export default function WorkSpace () {
                           marginRight: 8
                         }}
                       >
-                        {ws.name[0]}
+                        {ws.name ? ws.name[0] : ''}
                       </span>
                       {ws.name}
                       {expandedMenus[ws.name] ? (
@@ -469,12 +507,12 @@ export default function WorkSpace () {
                     <div key={i} className='mb-4'>
                       <h3 className='fs-4 fw-bold mb-3'>{ws.name}</h3>
                       <div className='row g-3'>
-                        {ws.boards.length === 0 && (
+                        {(ws.boards || []).length === 0 && (
                           <div className='col-12 text-muted'>
                             Henüz pano yok.
                           </div>
                         )}
-                        {ws.boards.map((b, j) => (
+                        {(ws.boards || []).map((b, j) => (
                           <div
                             key={j}
                             className='col-12 col-md-6 col-lg-4 col-xl-3'
@@ -501,11 +539,11 @@ export default function WorkSpace () {
                         fontWeight: 'bold'
                       }}
                     >
-                      {getCurrentWorkspace(mainView.workspace).name[0]}
+                      {getCurrentWorkspace(mainView.workspace)?.name ? getCurrentWorkspace(mainView.workspace).name[0] : ''}
                     </span>
                     <div>
                       <h1 className='fs-3 fw-bold m-0'>
-                        {getCurrentWorkspace(mainView.workspace).name}
+                        {getCurrentWorkspace(mainView.workspace)?.name || ''}
                       </h1>
                       <div className='d-flex align-items-center gap-1 text-muted'>
                         <Lock size={14} />
@@ -526,11 +564,11 @@ export default function WorkSpace () {
                       </button>
                     </div>
                     <div className='row g-3'>
-                      {getCurrentWorkspace(mainView.workspace).boards.length ===
+                      {(getCurrentWorkspace(mainView.workspace)?.boards || []).length ===
                         0 && (
                         <div className='col-12 text-muted'>Henüz pano yok.</div>
                       )}
-                      {getCurrentWorkspace(mainView.workspace).boards.map(
+                      {(getCurrentWorkspace(mainView.workspace)?.boards || []).map(
                         (b, i) => (
                           <div
                             key={i}
@@ -558,11 +596,11 @@ export default function WorkSpace () {
                         fontWeight: 'bold'
                       }}
                     >
-                      {getCurrentWorkspace(mainView.workspace).name[0]}
+                      {mainView.workspace.name ? mainView.workspace.name[0] : ''}
                     </span>
                     <div>
                       <h1 className='fs-3 fw-bold m-0'>
-                        {getCurrentWorkspace(mainView.workspace).name}
+                        {mainView.workspace.name || ''}
                       </h1>
                       <div className='d-flex align-items-center gap-2 text-muted'>
                         <Users size={14} />
@@ -572,21 +610,20 @@ export default function WorkSpace () {
                   </div>
                   <div>
                     <h2 className='fs-4 fw-bold mb-3'>Üyeler</h2>
-                    {(!getCurrentWorkspace(mainView.workspace).members ||
-                      getCurrentWorkspace(mainView.workspace).members.length ===
-                        0) && <div className='text-muted'>Henüz üye yok.</div>}
+                    {loadingMembers && <div>Yükleniyor...</div>}
+                    {membersError && <div className='text-danger'>{membersError}</div>}
+                    {!loadingMembers && !membersError && workspaceMembers.length === 0 && (
+                      <div className='text-muted'>Henüz üye yok.</div>
+                    )}
                     <ul className='list-unstyled p-0'>
-                      {getCurrentWorkspace(mainView.workspace).members &&
-                        getCurrentWorkspace(mainView.workspace).members.map(
-                          (m, i) => (
-                            <li
-                              key={i}
-                              className='card-container mb-2 p-3 fw-bold'
-                            >
-                              {m.name}
-                            </li>
-                          )
-                        )}
+                      {workspaceMembers.map((m, i) => (
+                        <li
+                          key={i}
+                          className='card-container mb-2 p-3 fw-bold'
+                        >
+                          {m.name || m.email || m.username}
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>

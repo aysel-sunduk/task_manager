@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthContext } from '../context/AuthContext';
-import { login as loginService } from '../services/auth';
+import { googleLogin, login as loginService } from '../services/auth';
 import './LoginForm.css';
 
 const LoginForm = () => {
@@ -14,47 +14,27 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: tokenResponse => {
-      // Burada tokenResponse.access_token ile backend'e istek atabilirsin
-      toast.success('Google ile giriş başarılı!');
-      
-      /* 
-      // Gerçek API endpoint kullanımı:
-      const verifyGoogleToken = async (token) => {
-        try {
-          const response = await fetch('https://api.example.com/auth/google', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ token: token.access_token }),
-          });
-          
-          const data = await response.json();
-          
-          if (data.success) {
-            login(data.user, data.token);
-            toast.success('Google ile giriş başarılı!');
+  const googleLoginHandler = useGoogleLogin({
+    onSuccess: async tokenResponse => {
+      try {
+        const data = await googleLogin(tokenResponse.access_token);
+        if (data && data.token && data.memberId) {
+          const user = {
+            id: data.memberId,
+            email: data.email,
+            roleId: data.roleId
+          };
+          login(user, data.token);
+          toast.success('Google ile giriş başarılı!');
+          setTimeout(() => {
             navigate('/workspace');
-          } else {
-            toast.error(data.message || 'Giriş başarısız!');
-          }
-        } catch (error) {
-          console.error('Google login error:', error);
-          toast.error('Bağlantı hatası oluştu!');
+          }, 1000);
+        } else {
+          toast.error('Google hesabı ile giriş başarısız!');
         }
-      };
-      
-      verifyGoogleToken(tokenResponse);
-      */
-      
-      // Mock veri ile giriş - Gerçek uygulamada API kullanılmalı
-      
-      // WorkSpace'e yönlendir
-      setTimeout(() => {
-        navigate('/workspace');
-      }, 1000);
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Google ile giriş başarısız!');
+      }
     },
     onError: () => {
       toast.error('Google ile giriş başarısız!');
@@ -65,11 +45,11 @@ const LoginForm = () => {
     e.preventDefault();
     try {
       const data = await loginService(email, password);
-      if (data && data.token) {
-        // Eğer user bilgisi dönmüyorsa, roleId ile user objesi oluşturabilirsin
+      if (data && data.token && data.memberId) {
         const user = {
-          email, // formdan gelen email
-          roleId: data.roleId // backend'den gelen roleId
+          id: data.memberId,
+          email,
+          roleId: data.roleId
         };
         login(user, data.token);
         toast.success(`Hoş geldiniz!`);
@@ -154,7 +134,7 @@ const LoginForm = () => {
 
               <div className="login-or">Veya şununla devam edin:</div>
 
-              <button className="google-btn" type="button" onClick={() => googleLogin()}>
+              <button className="google-btn" type="button" onClick={() => googleLoginHandler()}>
                 <span className="google-icon">
                   <svg width="20" height="20" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5h-1.9V20H24v8h11.3c-1.6 4.3-5.7 7-11.3 7-6.6 0-12-5.4-12-12s5.4-12 12-12c2.7 0 5.2.9 7.2 2.4l6.1-6.1C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.5 20-21 0-1.4-.1-2.7-.4-3.5z"/><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.5 16.1 18.8 13 24 13c2.7 0 5.2.9 7.2 2.4l6.1-6.1C34.5 5.1 29.5 3 24 3 16.1 3 9.1 7.8 6.3 14.7z"/><path fill="#FBBC05" d="M24 45c5.4 0 10.4-1.8 14.3-4.9l-6.6-5.4C29.5 36.9 26.9 38 24 38c-5.5 0-10.1-3.5-11.7-8.3l-6.5 5C9.1 40.2 16.1 45 24 45z"/><path fill="#EA4335" d="M43.6 20.5h-1.9V20H24v8h11.3c-0.7 2-2.1 3.7-3.9 4.9l6.6 5.4C41.9 39.1 45 32.5 45 24c0-1.4-.1-2.7-.4-3.5z"/></g></svg>
                 </span>
