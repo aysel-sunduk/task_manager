@@ -26,15 +26,6 @@ export const AuthProvider = ({ children }) => {
       }
     }
     
-    // MOCK veri ile otomatik login (sadece test için) - Sadece hiç token yoksa
-    if (!storedToken && process.env.NODE_ENV === 'development') {
-      const mockUser = { name: "Test Admin", email: "admin@test.com", role: "admin" };
-      const mockToken = "mock-admin-token-123";
-      setUser(mockUser);
-      setToken(mockToken);
-      localStorage.setItem("token", mockToken);
-      localStorage.setItem("user", JSON.stringify(mockUser));
-    }
   }, []);
 
   // NOT: URL değiştiğinde logout yapan kod kaldırıldı çünkü sayfa geçişlerinde sürekli logout yapıyordu
