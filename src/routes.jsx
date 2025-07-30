@@ -5,6 +5,8 @@ import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
+import NotFound from './pages/NotFound';
+import NotAuthorized from './pages/NotAuthorized';
 import Register from './pages/Register';
 import SettingsDrawerWrapper from './pages/SettingsDrawerWrapper';
 import WorkSpace from './pages/WorkSpace';
@@ -12,7 +14,15 @@ import WorkSpace from './pages/WorkSpace';
 
 const AppRoutes = () => (
   <Routes>
+    {/* Public routes */}
     <Route path="/" element={<Login />} />
+    <Route path="/login" element={<Login />} />
+    <Route path="/forgot-password" element={<ForgotPassword />} />
+    <Route path="/register" element={<Register />} />
+    <Route path="/not-authorized" element={<NotAuthorized />} />
+    <Route path="/404" element={<NotFound />} />
+    
+    {/* Protected routes */}
     <Route 
       path="/dashboard" 
       element={
@@ -29,9 +39,6 @@ const AppRoutes = () => (
         </ProtectedRoute>
       } 
     />
-    <Route path="/login" element={<Login />} />
-    <Route path="/forgot-password" element={<ForgotPassword />} />
-    <Route path="/register" element={<Register />} />
     <Route 
       path="/settings" 
       element={
@@ -43,12 +50,22 @@ const AppRoutes = () => (
     <Route 
       path="/admin" 
       element={
-        <ProtectedRoute>
+        <ProtectedRoute requireAdmin={true}>
           <Admin />
         </ProtectedRoute>
       } 
     />
-    <Route path="*" element={<Login />} />
+    <Route 
+      path="/Admin" 
+      element={
+        <ProtectedRoute requireAdmin={true}>
+          <Admin />
+        </ProtectedRoute>
+      } 
+    />
+    
+    {/* Catch-all route for 404 - must be last */}
+    <Route path="*" element={<NotFound />} />
   </Routes>
 );
 

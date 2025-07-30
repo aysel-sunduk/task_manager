@@ -1,11 +1,13 @@
 import React, { createContext, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { config, getApiUrl, testBackendConnection, testAllEndpoints } from "../config";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
 
   // Uygulama açılışında localStorage'dan token'ı ve user bilgisini oku
@@ -28,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     
   }, []);
 
-  // NOT: URL değiştiğinde logout yapan kod kaldırıldı çünkü sayfa geçişlerinde sürekli logout yapıyordu
+  
 
   const login = (userData, token) => {
     setUser(userData);

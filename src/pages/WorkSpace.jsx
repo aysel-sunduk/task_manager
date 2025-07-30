@@ -1,22 +1,22 @@
 import {
-  Bell,
-  ChevronDown,
-  ChevronUp,
-  Grid3X3,
-  Home,
-  Lock,
-  Menu,
-  Plus,
-  Search,
-  Settings,
-  Users
+    Bell,
+    ChevronDown,
+    ChevronUp,
+    Grid3X3,
+    Home,
+    Lock,
+    Menu,
+    Plus,
+    Search,
+    Settings,
+    Users
 } from 'lucide-react';
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import { Avatar, AvatarFallback } from '../components/ui/Avatar';
 import { AuthContext } from '../context/AuthContext';
-import { createWorkspace, fetchWorkspaceMembers } from '../services/workspaceService';
+import { createWorkspace, fetchAllWorkspaces, fetchWorkspaceMembers } from '../services/workspaceService';
 
 export default function WorkSpace () {
   const navigate = useNavigate()
@@ -39,6 +39,41 @@ export default function WorkSpace () {
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [membersError, setMembersError] = useState(null);
+  const [loadingWorkspaces, setLoadingWorkspaces] = useState(false);
+
+  // Sayfa açıldığında kullanıcının workspace'lerini yükle
+  useEffect(() => {
+    const loadUserWorkspaces = async () => {
+      if (user?.memberId) {
+        setLoadingWorkspaces(true);
+        try {
+          console.log('Kullanıcının workspace\'leri yükleniyor, memberId:', user.memberId);
+          const userWorkspaces = await fetchAllWorkspaces(user.memberId);
+          console.log('Backend\'den gelen workspace\'ler:', userWorkspaces);
+          
+          // Backend'den gelen workspace'leri düzgün formata çevir
+          const formattedWorkspaces = userWorkspaces.map(ws => ({
+            id: ws.id || ws._id,
+            name: ws.name || ws.workspaceName,
+            workspaceName: ws.workspaceName || ws.name,
+            boards: ws.boards || [],
+            description: ws.description || '',
+            creationDate: ws.creationDate || new Date().toISOString(),
+            active: ws.active !== undefined ? ws.active : true
+          }));
+          
+          console.log('Formatlanmış workspace\'ler:', formattedWorkspaces);
+          setWorkspaces(formattedWorkspaces);
+        } catch (error) {
+          console.error('Workspace\'ler yüklenirken hata:', error);
+        } finally {
+          setLoadingWorkspaces(false);
+        }
+      }
+    };
+
+    loadUserWorkspaces();
+  }, [user?.memberId]);
 
   // Get user initials for avatar
   const getUserInitials = () => {
@@ -56,8 +91,9 @@ export default function WorkSpace () {
   }
 
   const handleAddWorkspace = async () => {
-    const memberId = user?.id || user?._id;
+    const memberId = user?.memberId || user?.id || user?._id;
     console.log("Workspace oluşturuluyor, memberId:", memberId, "workspaceName:", newWorkspaceName);
+    console.log("User object:", user); // Debug için user objesini logla
     if (!memberId) {
       alert("Kullanıcı ID bulunamadı! Lütfen tekrar giriş yapın.");
       return;
@@ -72,13 +108,26 @@ export default function WorkSpace () {
     }
     try {
       let created = await createWorkspace(memberId, newWorkspaceName);
-      // Backend'den boards alanı gelmiyorsa ekle
-      if (!created.boards) created.boards = [];
-      setWorkspaces([...workspaces, created]);
+      console.log("Backend'den gelen workspace:", created);
+      
+      // Backend'den gelen workspace objesini düzgün şekilde işle
+      const workspaceObj = {
+        id: created.id || created._id,
+        name: created.name || created.workspaceName || newWorkspaceName, // Backend'den gelen name veya workspaceName'i kullan
+        workspaceName: created.workspaceName || created.name || newWorkspaceName,
+        boards: created.boards || [],
+        description: created.description || '',
+        creationDate: created.creationDate || new Date().toISOString(),
+        active: created.active !== undefined ? created.active : true
+      };
+      
+      console.log("İşlenmiş workspace objesi:", workspaceObj);
+      
+      setWorkspaces([...workspaces, workspaceObj]);
       setNewWorkspaceName('');
       setShowWorkspaceModal(false);
-      setSelectedWorkspace(created);
-      setMainView({ type: 'workspaceBoards', workspace: created });
+      setSelectedWorkspace(workspaceObj);
+      setMainView({ type: 'workspaceBoards', workspace: workspaceObj });
     } catch (err) {
       alert('Çalışma alanı oluşturulamadı!');
       console.error(err);
@@ -146,8 +195,24 @@ export default function WorkSpace () {
     fetchMembers();
   }, [mainView]);
 
-  const getCurrentWorkspace = ws =>
-    workspaces.find(w => w.name === ws?.name) || ws
+  const getCurrentWorkspace = ws => {
+    if (!ws) return null;
+    
+    // Önce name field'ına göre ara
+    let found = workspaces.find(w => w.name === ws.name);
+    if (found) return found;
+    
+    // Sonra workspaceName field'ına göre ara
+    found = workspaces.find(w => w.workspaceName === ws.workspaceName);
+    if (found) return found;
+    
+    // ID'ye göre ara
+    found = workspaces.find(w => w.id === ws.id || w._id === ws._id);
+    if (found) return found;
+    
+    // Hiçbiri bulunamazsa ws'yi döndür
+    return ws;
+  }
 
   // Davet maili gönderme işlemi (simülasyon)
   const handleSendInvite = () => {
@@ -392,99 +457,112 @@ export default function WorkSpace () {
                 >
                   Çalışma Alanları
                 </h3>
-                {workspaces.length === 0 && (
+                {loadingWorkspaces && (
+                  <div style={{ color: '#ddd', fontSize: 14 }}>
+                    Workspace'ler yükleniyor...
+                  </div>
+                )}
+                {!loadingWorkspaces && workspaces.length === 0 && (
                   <div style={{ color: '#ddd', fontSize: 14 }}>
                     Henüz bir çalışma alanı yok.
                   </div>
                 )}
-                {workspaces.map((ws, i) => (
-                  <div key={i}>
-                    <button
-                      className='button btn w-100 mb-1 d-flex align-items-center'
-                      style={{
-                        background:
-                          selectedWorkspace === ws
-                            ? 'rgba(242,233,228,0.2)'
-                            : 'rgba(244,162,97,0.2)',
-                        fontWeight: 'bold',
-                        justifyContent: 'flex-start'
-                      }}
-                      onClick={() => {
-                        handleSelectWorkspace(ws)
-                        toggleMenu(ws.name)
-                      }}
-                    >
-                      <span
+                {!loadingWorkspaces && workspaces.map((ws, i) => {
+                  // Workspace adını doğru şekilde al
+                  const workspaceName = ws.name || ws.workspaceName || 'Workspace';
+                  const firstLetter = workspaceName.charAt(0).toUpperCase();
+                  
+                  return (
+                    <div key={i}>
+                      <button
+                        className='button btn w-100 mb-1 d-flex align-items-center'
                         style={{
-                          width: 28,
-                          height: 28,
-                          background: '#f4a261',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          background:
+                            selectedWorkspace === ws
+                              ? 'rgba(242,233,228,0.2)'
+                              : 'rgba(244,162,97,0.2)',
                           fontWeight: 'bold',
-                          marginRight: 8
+                          justifyContent: 'flex-start'
+                        }}
+                        onClick={() => {
+                          handleSelectWorkspace(ws)
+                          toggleMenu(workspaceName)
                         }}
                       >
-                        {ws.name ? ws.name[0] : ''}
-                      </span>
-                      {ws.name}
-                      {expandedMenus[ws.name] ? (
-                        <ChevronUp style={{ marginLeft: 'auto' }} />
-                      ) : (
-                        <ChevronDown style={{ marginLeft: 'auto' }} />
-                      )}
-                    </button>
-                    {expandedMenus[ws.name] && (
-                      <div
-                        style={{
-                          marginLeft: 36,
-                          marginTop: 4,
-                          marginBottom: 8
-                        }}
-                      >
-                        <button
-                          className='button btn w-100 mb-1 d-flex align-items-center'
+                        <span
                           style={{
-                            background: 'rgba(74,78,105,0.3)',
-                            justifyContent: 'flex-start'
+                            width: 28,
+                            height: 28,
+                            background: '#f4a261',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            marginRight: 8,
+                            color: '#fff',
+                            fontSize: '14px'
                           }}
-                          onClick={() => handleShowWorkspaceBoards(ws)}
                         >
-                          <Grid3X3 style={{ marginRight: 6 }} />
-                          Panolar
-                        </button>
-                        <div className='d-flex align-items-center gap-1 mb-1'>
-                          {/* Üye Ekle butonu */}
+                          {firstLetter}
+                        </span>
+                        {workspaceName}
+                        {expandedMenus[workspaceName] ? (
+                          <ChevronUp style={{ marginLeft: 'auto' }} />
+                        ) : (
+                          <ChevronDown style={{ marginLeft: 'auto' }} />
+                        )}
+                      </button>
+                      {expandedMenus[workspaceName] && (
+                        <div
+                          style={{
+                            marginLeft: 36,
+                            marginTop: 4,
+                            marginBottom: 8
+                          }}
+                        >
                           <button
-                            className='button btn flex-grow-1 d-flex align-items-center'
+                            className='button btn w-100 mb-1 d-flex align-items-center'
                             style={{
-                              background: 'rgba(154,140,152,0.3)',
+                              background: 'rgba(74,78,105,0.3)',
                               justifyContent: 'flex-start'
                             }}
-                            onClick={() => setShowInviteModal(true)}
+                            onClick={() => handleShowWorkspaceBoards(ws)}
                           >
-                            <Users style={{ marginRight: 6 }} />
-                            Üye Ekle
+                            <Grid3X3 style={{ marginRight: 6 }} />
+                            Panolar
                           </button>
-                          <button
-                            className='button btn'
-                            style={{
-                              background: 'rgba(224,225,221,0.2)',
-                              fontWeight: 'bold',
-                              fontSize: '0.8rem',
-                              padding: '4px 6px'
-                            }}
-                            onClick={() => handleShowWorkspaceMembers(ws)}
-                          >
-                            Üyeleri Gör
-                          </button>
+                          <div className='d-flex align-items-center gap-1 mb-1'>
+                            {/* Üye Ekle butonu */}
+                            <button
+                              className='button btn flex-grow-1 d-flex align-items-center'
+                              style={{
+                                background: 'rgba(154,140,152,0.3)',
+                                justifyContent: 'flex-start'
+                              }}
+                              onClick={() => setShowInviteModal(true)}
+                            >
+                              <Users style={{ marginRight: 6 }} />
+                              Üye Ekle
+                            </button>
+                            <button
+                              className='button btn'
+                              style={{
+                                background: 'rgba(224,225,221,0.2)',
+                                fontWeight: 'bold',
+                                fontSize: '0.8rem',
+                                padding: '4px 6px'
+                              }}
+                              onClick={() => handleShowWorkspaceMembers(ws)}
+                            >
+                              Üyeleri Gör
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </aside>
 
@@ -539,11 +617,11 @@ export default function WorkSpace () {
                         fontWeight: 'bold'
                       }}
                     >
-                      {getCurrentWorkspace(mainView.workspace)?.name ? getCurrentWorkspace(mainView.workspace).name[0] : ''}
+                      {(getCurrentWorkspace(mainView.workspace)?.name || getCurrentWorkspace(mainView.workspace)?.workspaceName || 'W').charAt(0).toUpperCase()}
                     </span>
                     <div>
                       <h1 className='fs-3 fw-bold m-0'>
-                        {getCurrentWorkspace(mainView.workspace)?.name || ''}
+                        {getCurrentWorkspace(mainView.workspace)?.name || getCurrentWorkspace(mainView.workspace)?.workspaceName || 'Workspace'}
                       </h1>
                       <div className='d-flex align-items-center gap-1 text-muted'>
                         <Lock size={14} />
@@ -596,11 +674,11 @@ export default function WorkSpace () {
                         fontWeight: 'bold'
                       }}
                     >
-                      {mainView.workspace.name ? mainView.workspace.name[0] : ''}
+                      {(mainView.workspace.name || mainView.workspace.workspaceName || 'W').charAt(0).toUpperCase()}
                     </span>
                     <div>
                       <h1 className='fs-3 fw-bold m-0'>
-                        {mainView.workspace.name || ''}
+                        {mainView.workspace.name || mainView.workspace.workspaceName || 'Workspace'}
                       </h1>
                       <div className='d-flex align-items-center gap-2 text-muted'>
                         <Users size={14} />

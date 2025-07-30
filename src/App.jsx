@@ -4,6 +4,8 @@ import { BrowserRouter as Router } from "react-router-dom";
 import "./App.css";
 import { AuthProvider } from "./context/AuthContext";
 import AppRoutes from "./routes";
+import {config} from "./config";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 export const ThemeContext = createContext();
 
@@ -27,15 +29,17 @@ function App() {
   }, [themeStyles]);
 
   return (
-    <Router>
-      <AuthProvider>
-        <ThemeContext.Provider value={{ theme, setTheme }}>
-          <div className={theme === "dark" ? "theme-dark" : "theme-light"} style={{ minHeight: "100vh", ...themeStyles }}>
-            <AppRoutes />
-          </div>
-        </ThemeContext.Provider>
-      </AuthProvider>
-    </Router>
+    <GoogleOAuthProvider clientId={config.GOOGLE_CLIENT_ID}>
+      <Router>
+        <AuthProvider>
+          <ThemeContext.Provider value={{ theme, setTheme }}>
+            <div className={theme === "dark" ? "theme-dark" : "theme-light"} style={{ minHeight: "100vh", ...themeStyles }}>
+              <AppRoutes />
+            </div>
+          </ThemeContext.Provider>
+        </AuthProvider>
+      </Router>
+    </GoogleOAuthProvider>
   );
 }
 
