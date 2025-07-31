@@ -1,147 +1,233 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import "../components/LoginForm.css";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { config } from "../config";
+import "./css/LoginForm.css";
 
-const ForgotPassword = () => {
-  const [step, setStep] = useState(1); // 1: mail, 2: kod, 3: yeni şifre
+const ResetPassword = () => {
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [sentCode, setSentCode] = useState("");
+  const [temporaryPassword, setTemporaryPassword] = useState(""); // ✅ Eklendi
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const navigate = useNavigate();
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Simülasyon için kod üret
-  const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-  const handleSendMail = (e) => {
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess("");
+        if (success.includes("gönderildi")) {
+          setShowPasswordForm(true);
+        } else if (success.includes("güncellendi")) {
+          navigate('/login');
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      setError("Geçerli bir e-posta girin");
-      return;
-    }
-    const code = generateCode();
-    setSentCode(code);
-    setStep(2);
+    setLoading(true);
     setError("");
-    setSuccess("Doğrulama kodu e-posta adresinize gönderildi! (Simülasyon: " + code + ")");
-  };
 
-  const handleCheckCode = (e) => {
-    e.preventDefault();
-    if (code !== sentCode) {
-      setError("Kod yanlış!");
-      return;
-    }
-    setStep(3);
-    setError("");
-    setSuccess("");
-  };
+    try {
+      if (!showPasswordForm) {
+        if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+          throw new Error("Geçerli bir e-posta adresi girin");
+        }
 
-  const handleResetPassword = (e) => {
-    e.preventDefault();
-    if (!newPassword || newPassword.length < 8) {
-      setError("Şifre en az 8 karakter olmalı");
-      return;
-    }
-    if (!/[A-Z]/.test(newPassword)) {
-      setError("Şifre en az 1 büyük harf içermeli");
-      return;
-    }
-    if (!/[0-9]/.test(newPassword)) {
-      setError("Şifre en az 1 sayı içermeli");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("Şifreler eşleşmiyor");
-      return;
-    }
-    setError("");
-    setSuccess("Şifreniz başarıyla güncellendi!");
-    // Burada API'ye yeni şifre gönderilebilir
-  };
+        const response = await fetch(`${config.API_URL}/api/auth/forgot-password`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        });
 
-  return (
-    <div className="login-bg">
-      <div className="container">
-        <div className="row justify-content-center align-items-center" style={{ minHeight: "100vh" }}>
-          <div className="col-12 col-md-8 col-lg-6 col-xl-4">
-            <div className="login-container">
-              <h2 className="login-title">ŞİFREMİ UNUTTUM</h2>
-              
-              {error && <div className="alert alert-danger py-2">{error}</div>}
-              {success && <div className="alert alert-info py-2">{success}</div>}
-              
-              {step === 1 && (
-                <form onSubmit={handleSendMail} className="login-form w-100">
-                  <div className="mb-3">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      className="login-input"
-                      placeholder="E-posta Adresiniz"
-                    />
-                  </div>
-                  <button type="submit" className="login-btn">
-                    KODU GÖNDER
-                  </button>
-                </form>
-              )}
-              
-              {step === 2 && (
-                <form onSubmit={handleCheckCode} className="login-form w-100">
+        const contentType = response.headers.get("content-type");
+        let data;
+
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          data = text ? { message: text } : {};
+        }
+
+        if (!response.ok) {
+          throw new Error(data.message || "İşlem başarısız oldu");
+        }
+
+        setSuccess(data.message || "Şifre sıfırlama bağlantısı gönderildi!");
+      } else {
+        if (!temporaryPassword || temporaryPassword.trim() === "") {
+          throw new Error("Geçici şifre gereklidir");
+        }
+        if (!newPassword || newPassword.length < 8) {
+          throw new Error("Şifre en az 8 karakter olmalı");
+        }
+        if (newPassword !== confirmPassword) {
+          throw new Error("Şifreler eşleşmiyor");
+        }
+
+        const response = await fetch(`${config.API_URL}/api/auth/reset-password`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            temporaryPassword, // ✅ backend'e gönderilen alan
+            newPassword,
+            confirmPassword,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Şifre güncellenemedi");
+        }
+
+        setSuccess(data.message || "Şifreniz başarıyla güncellendi!");
+      }
+    } catch (err) {
+      if (err.message === "Failed to fetch") {
+        setError("Sunucuyla bağlantı kurulamadı. Lütfen internet bağlantınızı kontrol edin.");
+      } else {
+        setError(err.message || "Bir hata oluştu");
+      }
+
+      if (err.message.includes("Failed to fetch") && !showPasswordForm) {
+        setSuccess("Şifre sıfırlama bağlantısı gönderildi!");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+return (
+  <div className="login-bg">
+    <div className="container">
+      <div className="row justify-content-center align-items-center" style={{ minHeight: "100vh" }}>
+        <div className="col-12 col-md-8 col-lg-6 col-xl-4">
+          <div className="login-container">
+            <h2 className="login-title">ŞİFRE SIFIRLAMA</h2>
+
+            {error && <div className="alert alert-danger py-2">{error}</div>}
+            {success && <div className="alert alert-success py-2">{success}</div>}
+
+            <form onSubmit={handleSubmit} className="login-form w-100">
+              {!showPasswordForm ? (
+                <div className="mb-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="login-input"
+                    placeholder="E-posta Adresiniz"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+              ) : (
+                <>
                   <div className="mb-3">
                     <input
                       type="text"
-                      value={code}
-                      onChange={e => setCode(e.target.value)}
+                      value={temporaryPassword}
+                      onChange={(e) => setTemporaryPassword(e.target.value)}
                       className="login-input"
-                      placeholder="Doğrulama Kodu"
+                      placeholder="Geçici Şifre (Mail ile gelen kod)"
+                      disabled={loading}
+                      required
                     />
                   </div>
-                  <button type="submit" className="login-btn">
-                    KODU DOĞRULA
-                  </button>
-                </form>
-              )}
-              
-              {step === 3 && (
-                <form onSubmit={handleResetPassword} className="login-form w-100">
-                  <div className="mb-3">
+
+                  <div className="mb-3 position-relative">
                     <input
-                      type="password"
+                      type={showNewPassword ? "text" : "password"}
                       value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      className="login-input"
-                      placeholder="Yeni Şifre"
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="login-input pe-5"
+                      placeholder="Yeni Şifre (min 8 karakter)"
+                      disabled={loading}
+                      required
+                      minLength="8"
                     />
+                    <span
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="password-toggle"
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        cursor: "pointer",
+                        color: "#999"
+                      }}
+                    >
+                      {showNewPassword ? "🙈" : "👁️"}
+                    </span>
                   </div>
-                  <div className="mb-3">
+
+                  <div className="mb-3 position-relative">
                     <input
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      className="login-input"
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="login-input pe-5"
                       placeholder="Yeni Şifre (Tekrar)"
+                      disabled={loading}
+                      required
+                      minLength="8"
                     />
+                    <span
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="password-toggle"
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        cursor: "pointer",
+                        color: "#999"
+                      }}
+                    >
+                      {showConfirmPassword ? "🙈" : "👁️"}
+                    </span>
                   </div>
-                  <button type="submit" className="login-btn">
-                    ŞİFREYİ GÜNCELLE
-                  </button>
-                </form>
+                </>
               )}
-              
-              <div className="login-links mt-3">
-                <Link to="/login" className="login-link">Giriş Sayfasına Dön</Link>
-              </div>
+
+              <button
+                type="submit"
+                className="login-btn"
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                ) : showPasswordForm ? (
+                  "ŞİFREYİ GÜNCELLE"
+                ) : (
+                  "ŞİFRE GÖNDER"
+                )}
+              </button>
+            </form>
+
+            <div className="login-links mt-3">
+              <Link to="/login" className="login-link">Giriş Sayfasına Dön</Link>
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
+}
 
-export default ForgotPassword; 
+export default ResetPassword;

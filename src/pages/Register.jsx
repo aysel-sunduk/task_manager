@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import "../components/LoginForm.css";
+import "./css/LoginForm.css";
 import { register as registerService } from '../services/auth';
 
 const Register = () => {

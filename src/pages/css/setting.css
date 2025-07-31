@@ -1,0 +1,126 @@
+/* Settings Page Styles */
+.settings-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: #172b4d;
+}
+
+.settings-drawer.dark .settings-title {
+  color: #b6c2cf;
+}
+
+.settings-icon-btn {
+  color: #fff !important;
+  margin-left: 4px !important;
+}
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #172b4d;
+}
+
+.settings-drawer.dark .section-title {
+  color: #b6c2cf;
+}
+
+.premium-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.settings-drawer.dark .premium-section {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.premium-input {
+  border-radius: 4px;
+  border: 2px solid #dfe1e6;
+  background: #fff;
+  padding: 8px 12px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.settings-drawer.dark .premium-input {
+  border: 2px solid #3e4b5b;
+  background: #22272b;
+  color: #b6c2cf;
+}
+
+.premium-input:focus {
+  border: 2px solid #0079bf;
+  box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.2);
+}
+
+.settings-drawer.dark .premium-input:focus {
+  border: 2px solid #579dff;
+  box-shadow: 0 0 0 2px rgba(87, 157, 255, 0.2);
+}
+
+.premium-btn {
+  background: #0079bf;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.premium-btn:hover {
+  background: #026aa7;
+}
+
+.radio-label {
+  margin-right: 16px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.radio-label input {
+  margin-right: 8px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.password-input-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  flex: 1;
+}
+
+.password-input-wrapper span {
+  margin-left: 4px;
+  color: #888;
+  transition: color 0.2s;
+}
+
+.password-input-wrapper span:hover {
+  color: #4f8cff;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+}

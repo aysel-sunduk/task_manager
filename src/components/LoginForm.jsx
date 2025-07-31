@@ -5,7 +5,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthContext } from '../context/AuthContext';
 import { googleAuth, login as loginService, testGoogleOAuth } from '../services/auth';
-import './LoginForm.css';
+import '../pages/css/LoginForm.css';
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
+  const[showPassword, setShowPassword] = useState(false);
 
   // Google OAuth test fonksiyonu
   useEffect(() => {
@@ -189,16 +190,27 @@ const LoginForm = () => {
                   />
                 </div>
 
-                <div className="mb-3">
-                  <input
-                    type="password"
-                    placeholder="Şifreniz"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="login-input"
-                  />
-                </div>
+                 <div className="mb-3 position-relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="Şifreniz"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="login-input"
+        />
+        <button 
+          type="button" 
+          className="password-toggle-btn"
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          {showPassword ? (
+            <span className="password-toggle-icon">🙈</span> // Kapalı göz
+          ) : (
+            <span className="password-toggle-icon">🐵</span> // Açık göz
+          )}
+        </button>
+      </div>
 
                 <div className="login-remember mb-3 w-100">
                   <input

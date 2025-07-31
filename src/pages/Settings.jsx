@@ -10,6 +10,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ThemeContext } from '../App';
 import { AuthContext } from '../context/AuthContext';
 import { logout } from '../services/auth';
+import './css/setting.css';
 
 // Desteklenen diller
 const languages = [

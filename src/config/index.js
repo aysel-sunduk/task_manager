@@ -24,6 +24,7 @@ export const config = {
     GOOGLE_TEST: "/api/auth/google/test",
     // VALIDATE_TOKEN: "/api/auth/validate", // Backend'de yok
     LOGOUT: "/api/auth/logout",
+    FORGOT_PASSWORD: "/api/auth/forgot-password",
     // Admin endpoints
     ADMIN_DASHBOARD: "/api/admin/dashboard",
     ADMIN_WORKSPACES: "/api/admin/workspaces",
